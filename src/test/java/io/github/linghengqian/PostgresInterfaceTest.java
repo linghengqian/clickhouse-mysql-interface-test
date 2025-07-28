@@ -11,9 +11,8 @@ import java.util.concurrent.TimeUnit;
 import static org.awaitility.Awaitility.await;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 
-
 @SuppressWarnings({"resource", "SqlNoDataSourceInspection"})
-class MySQLInterfaceTest {
+class PostgresInterfaceTest {
     @Test
     void test() {
         try (var container = new GenericContainer<>("clickhouse/clickhouse-server:25.6.5.41")
@@ -24,15 +23,15 @@ class MySQLInterfaceTest {
                 .withCopyFileToContainer(
                         MountableFile.forHostPath(Paths.get("src/test/resources/xml/interface.xml").toAbsolutePath()),
                         "/etc/clickhouse-server/config.d/interface.xml")
-                .withExposedPorts(9004, 8123)) {
+                .withExposedPorts(9005, 8123)) {
             container.start();
-            var mysqlJdbcUrl = "jdbc:mysql://localhost:" + container.getMappedPort(9004) + "/my_database";
+            var postgresJdbcUrl = "jdbc:postgresql://localhost:" + container.getMappedPort(9005) + "/my_database";
             var clickhouseJdbcUrl = "jdbc:ch://localhost:" + container.getMappedPort(8123) + "/my_database";
             await().atMost(1L, TimeUnit.MINUTES).ignoreExceptions().until(() -> {
                 DriverManager.getConnection(clickhouseJdbcUrl, "alice", "changeme").close();
                 return true;
             });
-            assertDoesNotThrow(() -> DriverManager.getConnection(mysqlJdbcUrl, "alice", "changeme").close());
+            assertDoesNotThrow(() -> DriverManager.getConnection(postgresJdbcUrl, "alice", "changeme").close());
         }
     }
 }
